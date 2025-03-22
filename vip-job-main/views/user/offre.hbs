@@ -13,6 +13,43 @@
 
   {{> header1 }}
 
+  <!-- Hero Section with Carousel -->
+  <section class="relative w-full h-[60vh] bg-blue-500 overflow-hidden">
+    <div id="carousel" class="absolute inset-0 flex transition-all duration-700 ease-in-out">
+      <div class="carousel-item w-full flex-shrink-0">
+        <div class="h-full bg-cover bg-center" style="background-image: url('https://via.placeholder.com/1920x1080?text=Offre+1');">
+          <div class="flex justify-center items-center h-full bg-black bg-opacity-50">
+            <h2 class="text-white text-5xl font-bold">Découvrez les meilleures opportunités professionnelles</h2>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item w-full flex-shrink-0">
+        <div class="h-full bg-cover bg-center" style="background-image: url('https://via.placeholder.com/1920x1080?text=Offre+2');">
+          <div class="flex justify-center items-center h-full bg-black bg-opacity-50">
+            <h2 class="text-white text-5xl font-bold">Rejoignez les leaders du marché de l'emploi</h2>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item w-full flex-shrink-0">
+        <div class="h-full bg-cover bg-center" style="background-image: url('https://via.placeholder.com/1920x1080?text=Offre+3');">
+          <div class="flex justify-center items-center h-full bg-black bg-opacity-50">
+            <h2 class="text-white text-5xl font-bold">Boostez votre carrière avec des offres exclusives</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carousel Navigation -->
+    <div class="absolute top-1/2 left-0 right-0 flex justify-between px-6">
+      <button id="prev" class="text-white text-3xl bg-black bg-opacity-50 p-2 rounded-full">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button id="next" class="text-white text-3xl bg-black bg-opacity-50 p-2 rounded-full">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </section>
+
   <!-- Main Content -->
   <main class="flex-grow pt-28 pb-16 px-6 relative z-10">
     <div class="container mx-auto px-8 py-8">
@@ -39,21 +76,45 @@
   {{> footer }}
 
 <script>
-  // Fonction pour formater la date
+  // Carousel logic
+  let currentIndex = 0;
+  const items = document.querySelectorAll('.carousel-item');
+  const totalItems = items.length;
+
+  function showItem(index) {
+    items.forEach((item, i) => {
+      item.classList.add('hidden');
+      if (i === index) item.classList.remove('hidden');
+    });
+  }
+
+  document.getElementById('next').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % totalItems;
+    showItem(currentIndex);
+  });
+
+  document.getElementById('prev').addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+    showItem(currentIndex);
+  });
+
+  showItem(currentIndex);
+
+  // Function to format date
   function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR');
   }
 
-  // Récupérer les offres depuis l'API
+  // Fetch job offers from API
   async function fetchOffres() {
     try {
       const response = await fetch('/display-offres');
       const data = await response.json();
 
       if (data.success) {
-        offres = data.offres; // Stocker les offres récupérées
+        offres = data.offres; // Store fetched offers
         displayOffres(offres);
       } else {
         document.getElementById('offres-container').innerHTML = "<p class='text-gray-600'>Aucune offre disponible.</p>";
@@ -64,7 +125,7 @@
     }
   }
 
-  // Afficher les offres filtrées
+  // Display filtered job offers
   function displayOffres(offresList) {
     const container = document.getElementById('offres-container');
     container.innerHTML = '';
@@ -93,7 +154,7 @@
             </div>
 
             <div class="flex justify-between items-center">
-              <button class="text-gray-700 border p-3 rounded-md hover:bg-gray-100 hover:text-black font-medium">Postuler</button>
+              {{!-- <button class="text-gray-700 border p-3 rounded-md hover:bg-gray-100 hover:text-black font-medium">Postuler</button> --}}
               <button class="text-gray-400 hover:text-blue-600 transition">
                 <i class="far fa-bookmark text-xl"></i>
               </button>
@@ -105,24 +166,24 @@
     });
   }
 
-  // Filtrer les offres selon le domaine sélectionné
+  // Filter job offers by domain
   function filterOffresByDomain(selectedDomain) {
     let storedDomain = localStorage.getItem("domain");
 
     if (!storedDomain) {
       console.warn("Aucun domaine trouvé dans localStorage. Affichage de toutes les offres.");
-      storedDomain = "all"; // Valeur par défaut si aucun domaine n'est stocké
+      storedDomain = "all"; // Default value if no domain is stored
     }
 
     const filteredOffres = offres.filter(offre => {
-      if (selectedDomain === "all") return true; // Afficher toutes les offres
+      if (selectedDomain === "all") return true; // Show all offers
       return offre.domaine === storedDomain;
     });
 
     displayOffres(filteredOffres);
   }
 
-  // Charger les offres et ajouter l'écouteur sur le filtre
+  // Load job offers and add event listener for filter
   let offres = [];
   document.addEventListener('DOMContentLoaded', () => {
     fetchOffres();
