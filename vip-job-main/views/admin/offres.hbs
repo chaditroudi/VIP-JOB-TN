@@ -106,53 +106,57 @@
   </div>
 
   <!-- Update Modal -->
-  <div id="updateOffreModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-      <h2 class="text-xl font-semibold mb-4">Update Offre</h2>
-      <form id="updateOffreForm">
-        <input type="hidden" id="updateOffreId" />
-        <div class="mb-4">
-          <label class="block text-gray-700">Titre</label>
-          <input type="text" id="updateTitre" class="w-full p-2 border rounded" required />
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700">Description</label>
-          <textarea id="updateDescription" class="w-full p-2 border rounded" required></textarea>
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700">Date de création</label>
-          <input type="date" id="updateDate_creation" class="w-full p-2 border rounded" required />
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700">Date de fin</label>
-          <input type="date" id="updateDate_fin" class="w-full p-2 border rounded" required />
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700">Domaine</label>
-          <input type="text" id="updateDomaine" class="w-full p-2 border rounded" required />
-        </div>
-  
-  <div class="mb-4">
-  <label class="block text-gray-700">Type de Contrat</label>
-  <input type="text" id="updateTypeContrat" class="w-full p-2 border rounded" required />
-</div>
-<div class="mb-4">
-  <label class="block text-gray-700">Localisation</label>
-  <input type="text" id="updateLocalisation" class="w-full p-2 border rounded" required />
-</div>
-<div class="mb-4">
-  <label class="block text-gray-700">Nombre de Candidats</label>
-  <input type="number" id="updateNbCandidat" class="w-full p-2 border rounded" required />
-</div>
-        <div class="flex justify-end space-x-2">
-          <button type="button" id="closeUpdateModal" class="px-4 py-2 bg-gray-400 text-white rounded">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
-        </div>
-      </form>
-    </div>
+    <div id="updateOffreModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 class="text-xl font-semibold mb-4">Update Offre</h2>
+        <form id="updateOffreForm">
+          <input type="hidden" id="updateOffreId" />
+          <div class="mb-4">
+            <label class="block text-gray-700">Titre</label>
+            <input type="text" id="updateTitre" class="w-full p-2 border rounded" required />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Description</label>
+            <textarea id="updateDescription" class="w-full p-2 border rounded" required></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Date de création</label>
+            <input type="date" id="updateDate_creation" class="w-full p-2 border rounded" required />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Date de fin</label>
+            <input type="date" id="updateDate_fin" class="w-full p-2 border rounded" required />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Domaine</label>
+            <input type="text" id="updateDomaine" class="w-full p-2 border rounded" required />
+          </div>
+    
+    <div class="mb-4">
+    <label class="block text-gray-700">Type de Contrat</label>
+    <input type="text" id="updateTypeContrat" class="w-full p-2 border rounded"  />
   </div>
+  <div class="mb-4">
+    <label class="block text-gray-700">Localisation</label>
+    <input type="text" id="updateLocalisation" class="w-full p-2 border rounded"  />
+  </div>
+  <div class="mb-4">
+    <label class="block text-gray-700">Nombre de Candidats</label>
+    <input type="number" id="updateNbCandidat" class="w-full p-2 border rounded"  />
+  </div>
+          <div class="flex justify-end space-x-2">
+            <button type="button" id="closeUpdateModal" class="px-4 py-2 bg-gray-400 text-white rounded">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
   <script>
+    document.getElementById("closeUpdateModal").addEventListener("click", function () {
+    document.getElementById("updateOffreModal").classList.add("hidden");
+});
+
     let offres = [];
     let currentPage = 1;
     const offersPerPage = 5;
@@ -282,12 +286,17 @@ function editOffre(id) {
         return;
     }
 
+
     document.getElementById('updateOffreId').value = offre.id;
     document.getElementById('updateTitre').value = offre.titre;
     document.getElementById('updateDescription').value = offre.description;
     document.getElementById('updateDate_creation').value = formatDateToYYYYMMDD(offre.date_creation);
     document.getElementById('updateDate_fin').value = formatDateToYYYYMMDD(offre.date_fin);
     document.getElementById('updateDomaine').value = offre.domaine;
+        document.getElementById('updateTypeContrat').value = offre.type_contrat;
+    document.getElementById('updateLocalisation').value = offre.localisation;
+    document.getElementById('updateNbCandidat').value = offre.nb_candidat;
+
 
     updateOffreModal.classList.remove('hidden');
 }
@@ -317,8 +326,15 @@ updateOffreForm.addEventListener('submit', (e) => {
         if (data.success) {
             const index = offres.findIndex(o => o.id == id);
             offres[index] = data.offre;
-            renderOffres();
+          fetchOffres();
             updateOffreModal.classList.add('hidden'); // Close modal
+             // SweetAlert success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Offer Updated Successfully',
+                showConfirmButton: false,
+                timer: 1500
+            });
         }
     })
     .catch(error => console.error('Error updating offer:', error));
