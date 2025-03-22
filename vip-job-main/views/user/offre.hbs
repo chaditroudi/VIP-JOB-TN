@@ -38,100 +38,100 @@
 
   {{> footer }}
 
-  <script>
-    // Fonction pour formater une date en DD/MM/YYYY
-    function formatDate(dateString) {
-      if (!dateString) return 'N/A';
-      const date = new Date(dateString);
-      const day = date.getDate().toString().padStart(2, '0');  // Jour avec 2 chiffres
-      const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Mois avec 2 chiffres
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
+<script>
+  // Fonction pour formater la date
+  function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  }
 
-    // Récupérer les offres d'emploi depuis l'API
-    async function fetchOffres() {
-      try {
-        const response = await fetch('/display-offres');
-        const data = await response.json();
+  // Récupérer les offres depuis l'API
+  async function fetchOffres() {
+    try {
+      const response = await fetch('/display-offres');
+      const data = await response.json();
 
-        if (data.success) {
-          displayOffres(data.offres);
-        } else {
-          document.getElementById('offres-container').innerHTML = "<p class='text-gray-600'>Aucune offre disponible.</p>";
-        }
-      } catch (error) {
-        console.error("Erreur lors de la récupération des offres:", error);
-        document.getElementById('offres-container').innerHTML = "<p class='text-red-500'>Erreur de chargement des offres.</p>";
+      if (data.success) {
+        offres = data.offres; // Stocker les offres récupérées
+        displayOffres(offres);
+      } else {
+        document.getElementById('offres-container').innerHTML = "<p class='text-gray-600'>Aucune offre disponible.</p>";
       }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des offres:", error);
+      document.getElementById('offres-container').innerHTML = "<p class='text-red-500'>Erreur de chargement des offres.</p>";
     }
+  }
 
-    // Afficher les offres dans le HTML
-    function displayOffres(offres) {
-      const container = document.getElementById('offres-container');
-      container.innerHTML = '';
+  // Afficher les offres filtrées
+  function displayOffres(offresList) {
+    const container = document.getElementById('offres-container');
+    container.innerHTML = '';
 
-   
-      offres.forEach(offre => {
-        const offreHTML = `
-          <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
-            <div class="p-3">
-              <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl font-bold text-gray-800">${offre.titre}</h3>
-                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">${offre.type}</span>
-              </div>
+    offresList.forEach(offre => {
+      const offreHTML = `
+        <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
+          <div class="p-3">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-xl font-bold text-gray-800">${offre.titre}</h3>
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">${offre.type}</span>
+            </div>
 
-              <p class="text-gray-600 mb-4 line-clamp-2">${offre.description}</p>
+            <p class="text-gray-600 mb-4 line-clamp-2">${offre.description}</p>
 
-              <div class="flex space-between w-full mb-4 text-sm">
-                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                  <i class="fas fa-briefcase mr-1"></i> <strong>Domaine :</strong> ${offre.domaine}
-                </span>
-                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                  <i class="fas fa-calendar-alt mr-1"></i> <strong>Début :</strong> ${formatDate(offre.date_creation)}
-                </span>
-                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                  <i class="fas fa-hourglass-end mr-1"></i> <strong>Fin :</strong> ${formatDate(offre.date_fin)}
-                </span>
-              </div>
+            <div class="flex space-between w-full mb-4 text-sm">
+              <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                <i class="fas fa-briefcase mr-1"></i> <strong>Domaine :</strong> ${offre.domaine}
+              </span>
+              <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                <i class="fas fa-calendar-alt mr-1"></i> <strong>Début :</strong> ${formatDate(offre.date_creation)}
+              </span>
+              <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                <i class="fas fa-hourglass-end mr-1"></i> <strong>Fin :</strong> ${formatDate(offre.date_fin)}
+              </span>
+            </div>
 
-              <div class="flex justify-between items-center">
-                <button class="text- border p-3 rounded-md hover:bg-slate-100 hover:text-black font-medium">Postuler</button>
-                <button class="text-gray-400 hover:text-blue-600 transition">
-                  <i class="far fa-bookmark text-xl"></i>
-                </button>
-              </div>
+            <div class="flex justify-between items-center">
+              <button class="text-gray-700 border p-3 rounded-md hover:bg-gray-100 hover:text-black font-medium">Postuler</button>
+              <button class="text-gray-400 hover:text-blue-600 transition">
+                <i class="far fa-bookmark text-xl"></i>
+              </button>
             </div>
           </div>
-        `;
-        container.innerHTML += offreHTML;
-      });
+        </div>
+      `;
+      container.innerHTML += offreHTML;
+    });
+  }
+
+  // Filtrer les offres selon le domaine sélectionné
+  function filterOffresByDomain(selectedDomain) {
+    let storedDomain = localStorage.getItem("domain");
+
+    if (!storedDomain) {
+      console.warn("Aucun domaine trouvé dans localStorage. Affichage de toutes les offres.");
+      storedDomain = "all"; // Valeur par défaut si aucun domaine n'est stocké
     }
 
-    // Filtrer les offres par domaine
-    function filterOffresByDomain(domain) {
-      const storedDomain = localStorage.getItem("domain");
-      alert(storedDomain)
-      const filteredOffres = offres.filter(offre => {
-        if (domain === 'all') return true;
-        return offre.domaine === (storedDomain || 'all');
-      });
-
-      displayOffres(filteredOffres);
-    }
-
-    // Charger les offres et ajouter un écouteur pour le filtre de domaine
-    let offres = [];
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchOffres();
-
-      // Ajouter un écouteur d'événement sur le changement du filtre
-      document.getElementById('domain-filter').addEventListener('change', (e) => {
-        filterOffresByDomain(e.target.value);
-      });
+    const filteredOffres = offres.filter(offre => {
+      if (selectedDomain === "all") return true; // Afficher toutes les offres
+      return offre.domaine === storedDomain;
     });
 
-  </script>
+    displayOffres(filteredOffres);
+  }
+
+  // Charger les offres et ajouter l'écouteur sur le filtre
+  let offres = [];
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchOffres();
+
+    document.getElementById('domain-filter').addEventListener('change', (e) => {
+      filterOffresByDomain(e.target.value);
+    });
+  });
+</script>
 
 </body>
 
