@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VipJob.tn - Offres d'emploi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white">
+
+  {{> header1 }}
+
+  <!-- Main Content -->
+  <main class="flex-grow pt-28 pb-16 px-6 relative z-10">
+    <div class="container mx-auto px-8 py-8">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-blue-700 mb-4">Offres d'emploi</h1>
+        <p class="text-gray-600 max-w-2xl mx-auto">Découvrez les meilleures opportunités professionnelles en Tunisie</p>
+      </div>
+
+      <!-- Domain Filter Dropdown -->
+      <div class="flex justify-center mb-8">
+        <select id="domain-filter" class="p-2 border rounded-md shadow-sm">
+          <option value="all">Toutes les offres</option>
+          <option value="my-domain">Offres de mon domaine</option>
+        </select>
+      </div>
+
+      <!-- Liste des offres dynamiques -->
+      <div id="offres-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Les offres seront ajoutées ici via JavaScript -->
+      </div>
+    </div>
+  </main>
+
+  {{> footer }}
+
+  <script>
+    // Fonction pour formater une date en DD/MM/YYYY
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, '0');  // Jour avec 2 chiffres
+      const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Mois avec 2 chiffres
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    // Récupérer les offres d'emploi depuis l'API
+    async function fetchOffres() {
+      try {
+        const response = await fetch('/display-offres');
+        const data = await response.json();
+
+        if (data.success) {
+          displayOffres(data.offres);
+        } else {
+          document.getElementById('offres-container').innerHTML = "<p class='text-gray-600'>Aucune offre disponible.</p>";
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des offres:", error);
+        document.getElementById('offres-container').innerHTML = "<p class='text-red-500'>Erreur de chargement des offres.</p>";
+      }
+    }
+
+    // Afficher les offres dans le HTML
+    function displayOffres(offres) {
+      const container = document.getElementById('offres-container');
+      container.innerHTML = '';
+
+   
+      offres.forEach(offre => {
+        const offreHTML = `
+          <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
+            <div class="p-3">
+              <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold text-gray-800">${offre.titre}</h3>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">${offre.type}</span>
+              </div>
+
+              <p class="text-gray-600 mb-4 line-clamp-2">${offre.description}</p>
+
+              <div class="flex space-between w-full mb-4 text-sm">
+                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                  <i class="fas fa-briefcase mr-1"></i> <strong>Domaine :</strong> ${offre.domaine}
+                </span>
+                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                  <i class="fas fa-calendar-alt mr-1"></i> <strong>Début :</strong> ${formatDate(offre.date_creation)}
+                </span>
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                  <i class="fas fa-hourglass-end mr-1"></i> <strong>Fin :</strong> ${formatDate(offre.date_fin)}
+                </span>
+              </div>
+
+              <div class="flex justify-between items-center">
+                <button class="text- border p-3 rounded-md hover:bg-slate-100 hover:text-black font-medium">Postuler</button>
+                <button class="text-gray-400 hover:text-blue-600 transition">
+                  <i class="far fa-bookmark text-xl"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += offreHTML;
+      });
+    }
+
+    // Filtrer les offres par domaine
+    function filterOffresByDomain(domain) {
+      const storedDomain = localStorage.getItem("domain");
+      alert(storedDomain)
+      const filteredOffres = offres.filter(offre => {
+        if (domain === 'all') return true;
+        return offre.domaine === (storedDomain || 'all');
+      });
+
+      displayOffres(filteredOffres);
+    }
+
+    // Charger les offres et ajouter un écouteur pour le filtre de domaine
+    let offres = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchOffres();
+
+      // Ajouter un écouteur d'événement sur le changement du filtre
+      document.getElementById('domain-filter').addEventListener('change', (e) => {
+        filterOffresByDomain(e.target.value);
+      });
+    });
+
+  </script>
+
+</body>
+
+</html>
