@@ -66,6 +66,26 @@
         </select>
       </div>
 
+<div class="p-6 bg-white rounded-md shadow-md mb-6">
+  <h2 class="text-2xl font-bold mb-4">Recherche Avancée</h2>
+  <form id="advanced-search-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <input type="text" id="search-titre" placeholder="Titre de l'emploi" class="p-2 border rounded-md">
+    <select id="search-domaine" class="p-2 border rounded-md">
+      <option value="">Tous les domaines</option>
+      <option value="info">info</option>
+      <option value="Marketing">Marketing</option>
+    </select>
+    <select id="search-type" class="p-2 border rounded-md">
+      <option value="">Tous types</option>
+      <option value="CDI">CDI</option>
+      <option value="CDD">CDD</option>
+    </select>
+    <button type="submit" class="p-2 bg-blue-600 text-white rounded-md">Rechercher</button>
+  </form>
+</div>
+
+      
+
       <!-- Liste des offres dynamiques -->
       <div id="offres-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Les offres seront ajoutées ici via JavaScript -->
@@ -192,6 +212,27 @@
       filterOffresByDomain(e.target.value);
     });
   });
+
+  document.getElementById('advanced-search-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const titre = document.getElementById('search-titre').value;
+  const domaine = document.getElementById('search-domaine').value;
+  const type = document.getElementById('search-type').value;
+
+  try {
+    const response = await fetch(`/search-offre?titre=${titre}&domaine=${domaine}&type_contrat=${type}`);
+    const data = await response.json();
+
+    if (data.success) {
+      displayOffres(data.offres);
+    } else {
+      document.getElementById('offres-container').innerHTML = "<p class='text-gray-600'>Aucune offre trouvée.</p>";
+    }
+  } catch (error) {
+    console.error("Erreur de recherche avancée:", error);
+  }
+});
+  
 </script>
 
 </body>

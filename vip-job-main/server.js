@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const path = require("path");
 const session = require("express-session"); // Pour gérer les sessions
 const { engine } = require("express-handlebars");
+const scrapeTanitJobs = require("./scrape-tanitjobs");
 
 const jsPDF = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
@@ -827,7 +828,38 @@ app.get('/display-offres', (req, res) => {
   });
 });
 
+app.get('/search-offre', (req, res) => {
+  let query = "SELECT * FROM offreemploi WHERE 1 = 1";
+  const params = [];
 
+  if (req.query.titre) {
+    query += " AND (titre LIKE ?)";
+    params.push(`%${req.query.titre}%`);
+  }
+
+  if (req.query.domaine) {
+    query += " AND domaine = ?";
+    params.push(req.query.domaine);
+  }
+
+  if (req.query.type_contrat) {
+    query += " AND type_contrat = ?";
+    params.push(req.query.type_contrat);
+  }
+
+  if (req.query.localisation) {  // Fixed incorrect parameter check
+    query += " AND localisation = ?";
+    params.push(req.query.localisation);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error("Erreur lors de la récupération des offres:", err);
+      return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+    res.status(200).json({ success: true, offres: results });
+  });
+});
 
 app.put('/update-offre/:id', (req, res) => {
   const id = req.params.id;  // Correct access to the id parameter
@@ -882,6 +914,16 @@ app.delete('/delete-offre/:id', async (req, res) => {
   });
 });
 
+
+
+app.get("/jobs", async (req, res) => {
+  try {
+    const jobs = await scrapeTanitJobs();
+    res.json(jobs); // Send the JSON response
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
 // Démarrer le serveur
 app.listen(port, () => {
   console.log(`Serveur en cours d'exécution sur http://localhost:${port}`);
