@@ -8,6 +8,7 @@ const path = require("path");
 const session = require("express-session"); // Pour gérer les sessions
 const { engine } = require("express-handlebars");
 const scrapeTanitJobs = require("./scrape-tanitjobs");
+const twilio = require('twilio');
 
 const jsPDF = require('jspdf');
 const { autoTable } = require('jspdf-autotable');
@@ -91,6 +92,12 @@ transporter.verify((error, success) => {
     console.log("Serveur SMTP prêt à envoyer des e-mails");
   }
 });
+
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
 
 // Route pour gérer la connexion
 app.post("/login", (req, res) => {
@@ -924,6 +931,101 @@ app.get("/jobs", async (req, res) => {
     res.status(500).json({ error: error });
   }
 });
+
+app.get("/users-for-sms", (req, res) => {
+  db.query("SELECT id, nom, numero_telephone FROM utilisateur", (err, results) => {
+    if (err) {
+      console.error("Erreur lors de la récupération des utilisateurs:", err);
+      return res.status(500).json({ success: false });
+    }
+    res.json({ success: true, users: results });
+  });
+});
+app.post("/send-sms", (req, res) => {
+  const {
+    numbers,
+    offreTitle
+  } = req.body;
+
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return res.status(400).json({ success: false, message: "Aucun numéro sélectionné." });
+  }
+
+  const validNumbers = numbers
+    .map(num => {
+      let trimmed = num.trim();
+      if (!trimmed.startsWith('+')) {
+        trimmed = '+216' + trimmed;
+      }
+      return trimmed;
+    })
+    .filter(num => /^\+216\d{8}$/.test(num));
+
+  if (validNumbers.length === 0) {
+    return res.status(400).json({ success: false, message: "Numéros invalides." });
+  }
+
+  console.log("Numéros valides:", validNumbers);
+  console.log("Titre brut de l'offre :", offreTitle);
+
+  const parts = offreTitle.split(',').map(p => p.trim());
+
+  const offreTitleExtracted = parts[0] || '';
+  const offreDomaineExtracted = parts[1] || '';
+  const offreTypeExtracted = parts[2] || '';
+
+  let offreLocationExtracted = '';
+  let offreStartDateExtracted = '';
+  let offreEndDateExtracted = '';
+
+  if (parts.length >= 4) {
+    const fourthPart = parts[3]; // e.g. "Tunis 2026-02-01T23:00:00.000Z"
+    const fourthSplit = fourthPart.split(' ');
+    if (fourthSplit.length >= 2) {
+      offreStartDateExtracted = new Date(fourthSplit.pop()).toLocaleDateString('fr-FR');
+      offreLocationExtracted = fourthSplit.join(' ');
+    } else {
+      offreLocationExtracted = fourthPart;
+    }
+  }
+
+  if (parts.length >= 5) {
+    offreEndDateExtracted = new Date(parts[4]).toLocaleDateString('fr-FR');
+  }
+
+  const smsBody = 
+    `📢 Nouvelle offre publiée :\n` +
+    `🧑‍💻 Titre: ${offreTitleExtracted}\n` +
+    `📚 Domaine: ${offreDomaineExtracted}\n` +
+    `📝 Type: ${offreTypeExtracted}\n` +
+    `📍 Lieu: ${offreLocationExtracted}\n` +
+    `📅 Début: ${offreStartDateExtracted}\n` +
+    `📆 Fin: ${offreEndDateExtracted}`;
+
+  console.log("Contenu du SMS :", smsBody);
+
+  const sendPromises = validNumbers.map(num =>
+    twilioClient.messages.create({
+      body: smsBody,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: num
+    })
+  );
+
+  Promise.all(sendPromises)
+    .then(() => {
+      return res.status(200).json({ success: true, message: "📨 SMS envoyés avec succès." });
+    })
+    .catch(error => {
+      console.error("Erreur lors de l'envoi des SMS:", error);
+      return res.status(500).json({ success: false, message: "❌ Erreur interne du serveur." });
+    });
+});
+
+
+
+
+
 // Démarrer le serveur
 app.listen(port, () => {
   console.log(`Serveur en cours d'exécution sur http://localhost:${port}`);

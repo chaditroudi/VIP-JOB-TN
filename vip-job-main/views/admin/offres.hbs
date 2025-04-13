@@ -152,6 +152,30 @@
       </div>
     </div>
 
+
+<!-- Modal -->
+<!-- Modal -->
+<div id="smsModal" class="modal" style="display:none; position:fixed; top:10%; left:25%; background:white; border:1px solid #ccc; padding:20px; z-index:1000; width:50%;">
+  <h3>Choisissez les utilisateurs à notifier</h3>
+  <form id="smsForm" onsubmit="sendSMS(event)">
+    <label for="userSelect">Utilisateurs:</label><br/>
+    <select id="userSelect" multiple size="8" style="width:100%; margin-bottom: 15px;">
+      <!-- Options added dynamically -->
+    </select>
+    <input type="hidden" id="modalOffreId" />
+    <input type="hidden" id="modalOffreTitle" />
+    <input type="hidden" id="modalOffreType" />
+    <input type="hidden" id="modalOffreDomaine" />
+    <input type="hidden" id="modalOffreLocation" />
+    <input type="hidden" id="modalOffreNbCandidat" />
+    <input type="hidden" id="modalOffreDateCreation" />
+    <input type="hidden" id="modalOffreDateFin" />
+    <button type="submit">📨 Envoyer SMS</button>
+    <button type="button" onclick="closeModal()">❌ Annuler</button>
+  </form>
+</div>
+
+
   <script>
     document.getElementById("closeUpdateModal").addEventListener("click", function () {
     document.getElementById("updateOffreModal").classList.add("hidden");
@@ -265,15 +289,48 @@ function renderOffres() {
                 <td class="p-3 border">${offre.type_contrat}</td>
                 <td class="p-3 border">${offre.localisation}</td>
                 <td class="p-3 border">${offre.nb_candidat}</td>
+                
                 <td class="p-3 border">
                     <button class="bg-blue-500 text-white px-2 py-1 rounded edit-btn" data-id="${offre.id}">Edit</button>
                     <button class="bg-red-500 text-white px-2 py-1 rounded delete-btn" data-id="${offre.id}">Delete</button>
                 </td>
+             
             </tr>
         `;
         offreTable.innerHTML += row;
     });
+document.querySelectorAll('.send-sms-btn').forEach(button => {
+  button.addEventListener('click', function () {
+    // Récupération des attributs supplémentaires
+    const offreId = this.getAttribute('data-id');
+    const offreTitle = this.getAttribute('data-title');
+    const offreDomaine = this.getAttribute('data-domaine');
+    const offreType = this.getAttribute('data-type');
+    const offreLocation = this.getAttribute('data-localisation');
+    const offreCandidates = this.getAttribute('data-candidats');
+    const offreStartDate = this.getAttribute('data-start-date');
+    const offreEndDate = this.getAttribute('data-end-date');
 
+    // Vérification de l'existence des attributs requis
+    if (!offreId || !offreTitle || !offreDomaine || !offreType || !offreLocation) {
+      console.error('Erreur: Un ou plusieurs attributs requis sont manquants.');
+      alert('Détails de l\'offre incomplets. Veuillez réessayer.');
+      return;
+    }
+
+    // Log des valeurs récupérées
+    console.log(`Offre ID: ${offreId}, Titre: ${offreTitle}, Domaine: ${offreDomaine}, Type: ${offreType}, Localisation: ${offreLocation}`);
+    
+    // Appel de la fonction confirmAndSendSMS avec tous les paramètres
+    confirmAndSendSMS(
+      offreId, offreTitle, offreDomaine, offreType, offreLocation, 
+      offreCandidates, offreStartDate, offreEndDate
+    );
+  });
+});
+
+
+ 
     pageInfo.innerText = `Page ${currentPage}`;
     prevPageBtn.disabled = currentPage === 1;
     nextPageBtn.disabled = endIndex >= offres.length;
@@ -380,6 +437,10 @@ updateOffreForm.addEventListener('submit', (e) => {
       >
         <path d="M5 20a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8h2V6h-4V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H3v2h2zM9 4h6v2H9zm9 16H6V8h12z"/>
       </svg>
+   <button class="bg-blue-500 text-white px-2 py-1 rounded"
+                        onclick="confirmAndSendSMS('${offre.id}', '${offre.titre}, ${offre.domaine}, ${offre.type_contrat}, ${offre.localisation} ${offre.date_creation}, ${offre.date_fin}')">
+                        Envoyer SMS
+                    </button>
     </button>
   </div>
 </td>
@@ -402,6 +463,140 @@ updateOffreForm.addEventListener('submit', (e) => {
             renderOffres();
         }
     });
+
+function confirmAndSendSMS(offreId, offreTitle, offreDomaine, offreType, offreLocation, offreStartDate, offreEndDate) {
+  // Fetch users for SMS notification
+  fetch("/users-for-sms")
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const userSelect = document.getElementById("userSelect");
+        userSelect.innerHTML = ""; // Clear existing options
+        data.users.forEach(user => {
+          const option = document.createElement("option");
+          option.value = user.numero_telephone;
+          option.text = `${user.nom} (${user.numero_telephone})`;
+          userSelect.appendChild(option);
+        });
+
+        // Set the hidden input fields with the offer details
+        document.getElementById("modalOffreTitle").value = offreTitle;
+        document.getElementById("modalOffreDomaine").value = offreDomaine || "";  // Default to empty if undefined
+        document.getElementById("modalOffreType").value = offreType || "";  // Default to empty if undefined
+        document.getElementById("modalOffreLocation").value = offreLocation || "";  // Default to empty if undefined
+
+        // Display the modal
+        document.getElementById("smsModal").style.display = "block";
+      } else {
+        alert("Erreur lors du chargement des utilisateurs.");
+      }
+    });
+}
+
+// Close the modal
+function closeModal() {
+  document.getElementById("smsModal").style.display = "none";
+}
+
+// Handle SMS form submission
+
+
+
+
+
+
+
+
+
+function sendSMS(event) {
+  event.preventDefault(); // Prevent form submission (page reload)
+
+  // Log the start of the SMS sending process
+  console.log("Début de l'envoi du SMS...");
+
+  const selectedUsers = Array.from(document.getElementById("userSelect").selectedOptions).map(option => option.value);
+  const offreId = document.getElementById("modalOffreId").value;
+  const offreTitle = document.getElementById("modalOffreTitle").value.trim(); // Ensure there's no leading/trailing whitespace
+  const offreDomaine = document.getElementById("modalOffreDomaine").value.trim();
+  const offreType = document.getElementById("modalOffreType").value.trim();
+  const offreLocation = document.getElementById("modalOffreLocation").value.trim();
+  const offreCandidates = document.getElementById("modalOffreNbCandidat").value.trim();
+  const offreStartDate = document.getElementById("modalOffreDateCreation").value.trim();
+  const offreEndDate = document.getElementById("modalOffreDateFin").value.trim();
+
+  // Log the extracted offer details
+  console.log("Détails de l'offre extraits :", {
+    offreTitle,
+    offreDomaine,
+    offreType,
+    offreLocation,
+    offreCandidates,
+    offreStartDate,
+    offreEndDate
+  });
+
+  // Validate that at least one user is selected
+  if (selectedUsers.length === 0) {
+    console.warn("Aucun utilisateur sélectionné.");
+    alert("Veuillez sélectionner au moins un utilisateur.");
+    return;
+  }
+
+  // Log the selected users
+  console.log("Utilisateurs sélectionnés pour l'envoi du SMS :", selectedUsers);
+
+
+
+  // Send selected phone numbers and offer details to the backend
+  fetch("/send-sms", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      numbers: selectedUsers,
+      offreTitle: offreTitle,
+      offreDomaine: offreDomaine,
+      offreType: offreType,
+      offreLocation: offreLocation,
+      offreCandidates: offreCandidates,
+      offreStartDate: offreStartDate,
+      offreEndDate: offreEndDate
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        console.log("SMS envoyé avec succès !");
+        alert("SMS envoyé avec succès !");
+        closeModal(); // Close modal on success
+      } else {
+        console.error("Erreur lors de l'envoi du SMS :", data.message);
+        alert("Erreur lors de l'envoi du SMS.");
+      }
+    })
+    .catch(err => {
+      console.error("Erreur de connexion ou autre erreur :", err);
+      alert("Une erreur est survenue. Veuillez réessayer.");
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// Function to close the modal (make sure this exists in your code)
+function closeModal() {
+  document.getElementById("smsModal").style.display = "none";
+}
+
 
 
 
